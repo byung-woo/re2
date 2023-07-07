@@ -925,6 +925,12 @@ void Prog::ComputeHints(std::vector<Inst>* flat, int begin, int end) {
   }
 }
 
+int64_t Prog::MinimumMemoryBudget() {
+  return sizeof(Prog) +
+         (size_ * sizeof(Prog::Inst)) /* inst_ */ +
+         (CanBitState() ? size_ * sizeof(uint16_t) /* list_heads_*/ : 0);
+}
+
 // The final state will always be this, which frees up a register for the hot
 // loop and thus avoids the spilling that can occur when building with Clang.
 static const size_t kShiftDFAFinal = 9;

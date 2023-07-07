@@ -136,14 +136,14 @@ TEST(TestRegexpCompileToProg, Simple) {
       failed++;
       continue;
     }
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     if (prog == NULL) {
       LOG(ERROR) << "Cannot compile: " << t.regexp;
       re->Decref();
       failed++;
       continue;
     }
-    ASSERT_TRUE(re->CompileToProg(1) == NULL);
+    ASSERT_TRUE(re->CompileToProg(1, ReserveMaxDFABudget) == NULL);
     std::string s = prog->Dump();
     if (s != t.code) {
       LOG(ERROR) << "Incorrect compiled code for: " << t.regexp;
@@ -163,7 +163,7 @@ static void DumpByteMap(absl::string_view pattern, Regexp::ParseFlags flags,
   EXPECT_TRUE(re != NULL);
 
   {
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     EXPECT_TRUE(prog != NULL);
     *bytemap = prog->DumpByteMap();
     delete prog;
@@ -251,7 +251,7 @@ TEST(TestCompile, InsufficientMemory) {
       "^(?P<name1>[^\\s]+)\\s+(?P<name2>[^\\s]+)\\s+(?P<name3>.+)$",
       Regexp::LikePerl, NULL);
   EXPECT_TRUE(re != NULL);
-  Prog* prog = re->CompileToProg(850);
+  Prog* prog = re->CompileToProg(850, ReserveMaxDFABudget);
   // If the memory budget has been exhausted, compilation should fail
   // and return NULL instead of trying to do anything with NoMatch().
   EXPECT_TRUE(prog == NULL);
@@ -264,7 +264,7 @@ static void Dump(absl::string_view pattern, Regexp::ParseFlags flags,
   EXPECT_TRUE(re != NULL);
 
   if (forward != NULL) {
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     EXPECT_TRUE(prog != NULL);
     *forward = prog->Dump();
     delete prog;

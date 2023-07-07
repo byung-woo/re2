@@ -209,7 +209,7 @@ TestInstance::TestInstance(absl::string_view regexp_str, Prog::MatchKind kind,
     return;
   }
   num_captures_ = regexp_->NumCaptures();
-  prog_ = regexp_->CompileToProg(0);
+  prog_ = regexp_->CompileToProg(0, ReserveMaxDFABudget);
   if (prog_ == NULL) {
     LOG(INFO) << "Cannot compile: " << absl::CEscape(regexp_str_);
     error_ = true;

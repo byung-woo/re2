@@ -102,7 +102,8 @@ class Compiler : public Regexp::Walker<Frag> {
   // Caller is responsible for deleting Prog when finished with it.
   // If reversed is true, compiles for walking over the input
   // string backward (reverses all concatenations).
-  static Prog *Compile(Regexp* re, bool reversed, int64_t max_mem);
+  static Prog *Compile(Regexp* re, bool reversed, int64_t max_mem,
+                       DFABudgetOption dfa_budget_option);
 
   // Compiles alternation of all the re to a new Prog.
   // Each re has a match with an id equal to its index in the vector.
@@ -194,7 +195,8 @@ class Compiler : public Regexp::Walker<Frag> {
   // Single rune.
   Frag Literal(Rune r, bool foldcase);
 
-  void Setup(Regexp::ParseFlags flags, int64_t max_mem, RE2::Anchor anchor);
+  void Setup(Regexp::ParseFlags flags, int64_t max_mem,
+             DFABudgetOption dfa_budget_option, RE2::Anchor anchor);
   Prog* Finish(Regexp* re);
 
   // Returns .* where dot = any byte
@@ -211,6 +213,7 @@ class Compiler : public Regexp::Walker<Frag> {
   int max_ninst_;      // Maximum number of instructions.
 
   int64_t max_mem_;    // Total memory budget.
+  DFABudgetOption dfa_budget_option_; // How to reserve memory budget for dfa
 
   absl::flat_hash_map<uint64_t, int> rune_cache_;
   Frag rune_range_;
@@ -229,6 +232,7 @@ Compiler::Compiler() {
   ninst_ = 0;
   max_ninst_ = 1;  // make AllocInst for fail instruction okay
   max_mem_ = 0;
+  dfa_budget_option_ = ReserveMaxDFABudget;
   int fail = AllocInst(1);
   inst_[fail].InitFail();
   max_ninst_ = 0;  // Caller must change
@@ -1075,10 +1079,11 @@ static bool IsAnchorEnd(Regexp** pre, int depth) {
 }
 
 void Compiler::Setup(Regexp::ParseFlags flags, int64_t max_mem,
-                     RE2::Anchor anchor) {
+                     DFABudgetOption dfa_budget_option, RE2::Anchor anchor) {
   if (flags & Regexp::Latin1)
     encoding_ = kEncodingLatin1;
   max_mem_ = max_mem;
+  dfa_budget_option_ = dfa_budget_option;
   if (max_mem <= 0) {
     max_ninst_ = 100000;  // more than enough
   } else if (static_cast<size_t>(max_mem) <= sizeof(Prog)) {
@@ -1109,9 +1114,11 @@ void Compiler::Setup(Regexp::ParseFlags flags, int64_t max_mem,
 // If reversed is true, compiles a program that expects
 // to run over the input string backward (reverses all concatenations).
 // The reversed flag is also recorded in the returned program.
-Prog* Compiler::Compile(Regexp* re, bool reversed, int64_t max_mem) {
+Prog* Compiler::Compile(Regexp* re, bool reversed, int64_t max_mem,
+                        DFABudgetOption dfa_budget_option) {
   Compiler c;
-  c.Setup(re->parse_flags(), max_mem, RE2::UNANCHORED /* unused */);
+  c.Setup(re->parse_flags(), max_mem, dfa_budget_option,
+          RE2::UNANCHORED /* unused */);
   c.reversed_ = reversed;
 
   // Simplify to remove things like counted repetitions
@@ -1182,13 +1189,12 @@ Prog* Compiler::Finish(Regexp* re) {
   }
 
   // Record remaining memory for DFA.
-  if (max_mem_ <= 0) {
+  if (dfa_budget_option_ == ReserveNoDFABudget) {
+    prog_->set_dfa_mem(0);
+  } else if (max_mem_ <= 0) {
     prog_->set_dfa_mem(1<<20);
   } else {
-    int64_t m = max_mem_ - sizeof(Prog);
-    m -= prog_->size_*sizeof(Prog::Inst);  // account for inst_
-    if (prog_->CanBitState())
-      m -= prog_->size_*sizeof(uint16_t);  // account for list_heads_
+    int64_t m = max_mem_ - prog_->MinimumMemoryBudget();
     if (m < 0)
       m = 0;
     prog_->set_dfa_mem(m);
@@ -1200,12 +1206,13 @@ Prog* Compiler::Finish(Regexp* re) {
 }
 
 // Converts Regexp to Prog.
-Prog* Regexp::CompileToProg(int64_t max_mem) {
-  return Compiler::Compile(this, false, max_mem);
+Prog* Regexp::CompileToProg(int64_t max_mem,
+                            DFABudgetOption dfa_budget_option) {
+  return Compiler::Compile(this, false, max_mem, dfa_budget_option);
 }
 
 Prog* Regexp::CompileToReverseProg(int64_t max_mem) {
-  return Compiler::Compile(this, true, max_mem);
+  return Compiler::Compile(this, true, max_mem, ReserveMaxDFABudget);
 }
 
 Frag Compiler::DotStar() {
@@ -1215,7 +1222,7 @@ Frag Compiler::DotStar() {
 // Compiles RE set to Prog.
 Prog* Compiler::CompileSet(Regexp* re, RE2::Anchor anchor, int64_t max_mem) {
   Compiler c;
-  c.Setup(re->parse_flags(), max_mem, anchor);
+  c.Setup(re->parse_flags(), max_mem, ReserveMaxDFABudget, anchor);
 
   Regexp* sre = re->Simplify();
   if (sre == NULL)

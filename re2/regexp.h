@@ -187,6 +187,11 @@ enum RegexpStatusCode {
   kRegexpBadNamedCapture,    // bad named capture
 };
 
+enum DFABudgetOption {
+  ReserveMaxDFABudget,
+  ReserveNoDFABudget
+};
+
 // Error status for certain operations.
 class RegexpStatus {
  public:
@@ -419,7 +424,7 @@ class Regexp {
   // Construction and execution of prog will
   // stay within approximately max_mem bytes of memory.
   // If max_mem <= 0, a reasonable default is used.
-  Prog* CompileToProg(int64_t max_mem);
+  Prog* CompileToProg(int64_t max_mem, DFABudgetOption dfa_budget_option);
   Prog* CompileToReverseProg(int64_t max_mem);
 
   // Whether to expect this library to find exactly the same answer as PCRE

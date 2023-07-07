@@ -116,7 +116,7 @@ TEST(PossibleMatchRange, HandWritten) {
         LOG(INFO) << "Checking regexp=" << absl::CEscape(t.regexp);
         Regexp* re = Regexp::Parse(t.regexp, Regexp::LikePerl, NULL);
         ASSERT_TRUE(re != NULL);
-        Prog* prog = re->CompileToProg(0);
+        Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
         ASSERT_TRUE(prog != NULL);
         ASSERT_TRUE(prog->PossibleMatchRange(&min, &max, t.maxlen))
           << " " << t.regexp;

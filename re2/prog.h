@@ -397,6 +397,8 @@ class Prog {
   // Computes hints for ByteRange instructions in [begin, end).
   void ComputeHints(std::vector<Inst>* flat, int begin, int end);
 
+  int64_t MinimumMemoryBudget();
+
   // Controls whether the DFA should bail out early if the NFA would be faster.
   // FOR TESTING ONLY.
   static void TESTING_ONLY_set_dfa_should_bail_when_slow(bool b);

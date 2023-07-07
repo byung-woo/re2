@@ -23,6 +23,7 @@ RE2::Set::Set(const RE2::Options& options, RE2::Anchor anchor)
       compiled_(false),
       size_(0) {
   options_.set_never_capture(true);  // might unblock some optimisations
+  options_.set_minimize_max_mem(false);
 }
 
 RE2::Set::~Set() {

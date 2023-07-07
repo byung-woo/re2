@@ -35,7 +35,7 @@ namespace re2 {
 void Test() {
   Regexp* re = Regexp::Parse("(\\d+)-(\\d+)-(\\d+)", Regexp::LikePerl, NULL);
   CHECK(re);
-  Prog* prog = re->CompileToProg(0);
+  Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
   CHECK(prog);
   CHECK(prog->IsOnePass());
   CHECK(prog->CanBitState());
@@ -64,7 +64,7 @@ void MemoryUsage() {
                   mc.HeapGrowth(), mc.PeakHeapGrowth());
     mc.Reset();
 
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     CHECK(prog->IsOnePass());
     CHECK(prog->CanBitState());
@@ -691,7 +691,7 @@ void SimplifyCompileRegexp(benchmark::State& state, const std::string& regexp) {
     CHECK(re);
     Regexp* sre = re->Simplify();
     CHECK(sre);
-    Prog* prog = sre->CompileToProg(0);
+    Prog* prog = sre->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     delete prog;
     sre->Decref();
@@ -703,7 +703,7 @@ void CompileRegexp(benchmark::State& state, const std::string& regexp) {
   for (auto _ : state) {
     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
     CHECK(re);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     delete prog;
     re->Decref();
@@ -714,7 +714,7 @@ void CompileToProg(benchmark::State& state, const std::string& regexp) {
   Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
   CHECK(re);
   for (auto _ : state) {
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     delete prog;
   }
@@ -724,7 +724,7 @@ void CompileToProg(benchmark::State& state, const std::string& regexp) {
 void CompileByteMap(benchmark::State& state, const std::string& regexp) {
   Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
   CHECK(re);
-  Prog* prog = re->CompileToProg(0);
+  Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
   CHECK(prog);
   for (auto _ : state) {
     prog->ComputeByteMap();
@@ -863,7 +863,7 @@ void SearchDFA(benchmark::State& state, const char* regexp,
   for (auto _ : state) {
     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
     CHECK(re);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     bool failed = false;
     CHECK_EQ(prog->SearchDFA(text, absl::string_view(), anchor,
@@ -881,7 +881,7 @@ void SearchNFA(benchmark::State& state, const char* regexp,
   for (auto _ : state) {
     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
     CHECK(re);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     CHECK_EQ(prog->SearchNFA(text, absl::string_view(), anchor,
                              Prog::kFirstMatch, NULL, 0),
@@ -897,7 +897,7 @@ void SearchOnePass(benchmark::State& state, const char* regexp,
   for (auto _ : state) {
     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
     CHECK(re);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     CHECK(prog->IsOnePass());
     CHECK_EQ(prog->SearchOnePass(text, text, anchor, Prog::kFirstMatch, NULL, 0),
@@ -913,7 +913,7 @@ void SearchBitState(benchmark::State& state, const char* regexp,
   for (auto _ : state) {
     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
     CHECK(re);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     CHECK(prog->CanBitState());
     CHECK_EQ(prog->SearchBitState(text, text, anchor, Prog::kFirstMatch, NULL, 0),
@@ -961,7 +961,8 @@ Prog* GetCachedProg(const char* regexp) {
   if (prog == NULL) {
     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
     CHECK(re);
-    prog = re->CompileToProg(int64_t{1}<<31);  // mostly for the DFA
+    prog = re->CompileToProg(int64_t{1}<<31,
+                             ReserveMaxDFABudget);  // mostly for the DFA
     CHECK(prog);
     cache[regexp] = prog;
     re->Decref();
@@ -1075,7 +1076,7 @@ void Parse3NFA(benchmark::State& state, const char* regexp,
   for (auto _ : state) {
     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
     CHECK(re);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     absl::string_view sp[4];  // 4 because sp[0] is whole match.
     CHECK(prog->SearchNFA(text, absl::string_view(), Prog::kAnchored,
@@ -1090,7 +1091,7 @@ void Parse3OnePass(benchmark::State& state, const char* regexp,
   for (auto _ : state) {
     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
     CHECK(re);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     CHECK(prog->IsOnePass());
     absl::string_view sp[4];  // 4 because sp[0] is whole match.
@@ -1105,7 +1106,7 @@ void Parse3BitState(benchmark::State& state, const char* regexp,
   for (auto _ : state) {
     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
     CHECK(re);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     CHECK(prog->CanBitState());
     absl::string_view sp[4];  // 4 because sp[0] is whole match.
@@ -1120,7 +1121,7 @@ void Parse3Backtrack(benchmark::State& state, const char* regexp,
   for (auto _ : state) {
     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
     CHECK(re);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     absl::string_view sp[4];  // 4 because sp[0] is whole match.
     CHECK(prog->UnsafeSearchBacktrack(text, text, Prog::kAnchored, Prog::kFullMatch, sp, 4));
@@ -1214,7 +1215,7 @@ void Parse1NFA(benchmark::State& state, const char* regexp,
   for (auto _ : state) {
     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
     CHECK(re);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     absl::string_view sp[2];  // 2 because sp[0] is whole match.
     CHECK(prog->SearchNFA(text, absl::string_view(), Prog::kAnchored,
@@ -1229,7 +1230,7 @@ void Parse1OnePass(benchmark::State& state, const char* regexp,
   for (auto _ : state) {
     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
     CHECK(re);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     CHECK(prog->IsOnePass());
     absl::string_view sp[2];  // 2 because sp[0] is whole match.
@@ -1244,7 +1245,7 @@ void Parse1BitState(benchmark::State& state, const char* regexp,
   for (auto _ : state) {
     Regexp* re = Regexp::Parse(regexp, Regexp::LikePerl, NULL);
     CHECK(re);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     CHECK(prog);
     CHECK(prog->CanBitState());
     absl::string_view sp[2];  // 2 because sp[0] is whole match.

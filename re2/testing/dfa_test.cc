@@ -59,7 +59,7 @@ TEST(Multithreaded, BuildEntireDFA) {
 
   // Check that single-threaded code works.
   {
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     ASSERT_TRUE(prog != NULL);
 
     std::thread t(DoBuild, prog);
@@ -70,7 +70,7 @@ TEST(Multithreaded, BuildEntireDFA) {
 
   // Build the DFA simultaneously in a bunch of threads.
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); i++) {
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     ASSERT_TRUE(prog != NULL);
 
     std::vector<std::thread> threads;
@@ -101,7 +101,7 @@ TEST(SingleThreaded, BuildEntireDFA) {
     //int64_t progusage, dfamem;
     {
       testing::MallocCounter m(testing::MallocCounter::THIS_THREAD_ONLY);
-      Prog* prog = re->CompileToProg(limit);
+      Prog* prog = re->CompileToProg(limit, ReserveMaxDFABudget);
       ASSERT_TRUE(prog != NULL);
       //progusage = m.HeapGrowth();
       //dfamem = prog->dfa_mem();
@@ -168,7 +168,7 @@ TEST(SingleThreaded, SearchDFA) {
   int64_t peak_usage;
   {
     testing::MallocCounter m(testing::MallocCounter::THIS_THREAD_ONLY);
-    Prog* prog = re->CompileToProg(1<<n);
+    Prog* prog = re->CompileToProg(1<<n, ReserveMaxDFABudget);
     ASSERT_TRUE(prog != NULL);
     for (int i = 0; i < 10; i++) {
       bool matched = false;
@@ -237,7 +237,7 @@ TEST(Multithreaded, SearchDFA) {
 
   // Check that single-threaded code works.
   {
-    Prog* prog = re->CompileToProg(1<<n);
+    Prog* prog = re->CompileToProg(1<<n, ReserveMaxDFABudget);
     ASSERT_TRUE(prog != NULL);
 
     std::thread t(DoSearch, prog, match, no_match);
@@ -249,7 +249,7 @@ TEST(Multithreaded, SearchDFA) {
   // Run the search simultaneously in a bunch of threads.
   // Reuse same flags for Multithreaded.BuildDFA above.
   for (int i = 0; i < absl::GetFlag(FLAGS_repeat); i++) {
-    Prog* prog = re->CompileToProg(1<<n);
+    Prog* prog = re->CompileToProg(1<<n, ReserveMaxDFABudget);
     ASSERT_TRUE(prog != NULL);
 
     std::vector<std::thread> threads;
@@ -346,7 +346,7 @@ TEST(DFA, Callback) {
     const CallbackTest& t = callback_tests[i];
     Regexp* re = Regexp::Parse(t.regexp, Regexp::LikePerl, NULL);
     ASSERT_TRUE(re != NULL);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     ASSERT_TRUE(prog != NULL);
     std::string dump;
     prog->BuildEntireDFA(Prog::kLongestMatch, [&](const int* next, bool match) {

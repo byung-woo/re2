@@ -1658,4 +1658,24 @@ TEST(RE2, Issue310) {
   ASSERT_EQ(m, "") << " got m='" << m << "', want ''";
 }
 
+TEST(RE2, MinimizeMaxMemTest) {
+  std::string s = "(foo|bar)";
+  int64_t max_mem = 10000;
+
+  RE2::Options opt1;
+  opt1.set_max_mem(max_mem);
+  RE2 regex1(s, opt1);
+
+  ASSERT_TRUE(regex1.ok());
+  ASSERT_EQ(regex1.MaxMem(), max_mem);
+
+  RE2::Options opt2;
+  opt2.set_max_mem(max_mem);
+  opt2.set_minimize_max_mem(true);
+  RE2 regex2(s, opt2);
+
+  ASSERT_TRUE(regex2.ok());
+  ASSERT_LT(regex2.MaxMem(), max_mem);
+}
+
 }  // namespace re2

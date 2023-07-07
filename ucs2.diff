@@ -381,7 +381,7 @@ re2/testing/tester.cc#12:179,189 - re2/testing/tester.cc#13:177,185
 +     error_ = true;
       return;
     }
-    prog_ = regexp_->CompileToProg(0);
+    prog_ = regexp_->CompileToProg(0, ReserveMaxDFABudget);
 re2/testing/tester.cc#12:230,237 - re2/testing/tester.cc#13:226,231
       RE2::Options options;
       if (flags & Regexp::Latin1)

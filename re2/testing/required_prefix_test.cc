@@ -176,7 +176,7 @@ TEST(PrefixAccel, SimpleTests) {
     const char* pattern = prefix_accel_tests[i];
     Regexp* re = Regexp::Parse(pattern, Regexp::LikePerl, NULL);
     ASSERT_TRUE(re != NULL);
-    Prog* prog = re->CompileToProg(0);
+    Prog* prog = re->CompileToProg(0, ReserveMaxDFABudget);
     ASSERT_TRUE(prog != NULL);
     ASSERT_TRUE(prog->can_prefix_accel());
     for (int j = 0; j < 100; j++) {

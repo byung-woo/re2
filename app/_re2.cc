@@ -50,7 +50,8 @@ Info GetInfo(const std::string& pattern) {
     suffix = regexp->Incref();
   }
 
-  std::unique_ptr<re2::Prog> prog(suffix->CompileToProg(options.max_mem()));
+  std::unique_ptr<re2::Prog> prog(
+      suffix->CompileToProg(options.max_mem(), options.minimize_max_mem()));
   if (prog == nullptr) {
     info.error = "failed to compile forward Prog";
     suffix->Decref();

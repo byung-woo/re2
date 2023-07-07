@@ -603,6 +603,8 @@ class RE2 {
                const absl::string_view* vec,
                int veclen) const;
 
+  int64_t MaxMem() { return max_mem_; }
+
   // Constructor options
   class Options {
    public:
@@ -613,6 +615,8 @@ class RE2 {
     //   longest_match    (false) search for longest match, not first match
     //   log_errors       (true)  log syntax and execution errors to ERROR
     //   max_mem          (see below)  approx. max memory footprint of RE2
+    //   minimize_max_mem (false) minimize max memory footprint(max_mem) by
+    //                              removing forward dfa memory budget.
     //   literal          (false) interpret string as literal, not regexp
     //   never_nl         (false) never match \n, even if it is in regexp
     //   dot_nl           (false) dot matches everything including new line
@@ -677,7 +681,8 @@ class RE2 {
       case_sensitive_(true),
       perl_classes_(false),
       word_boundary_(false),
-      one_line_(false) {
+      one_line_(false),
+      minimize_max_mem_(false) {
     }
 
     /*implicit*/ Options(CannedOptions);
@@ -721,6 +726,9 @@ class RE2 {
     bool one_line() const { return one_line_; }
     void set_one_line(bool b) { one_line_ = b; }
 
+    bool minimize_max_mem() const { return minimize_max_mem_; }
+    void set_minimize_max_mem(bool b) { minimize_max_mem_ = b; }
+
     void Copy(const Options& src) {
       *this = src;
     }
@@ -741,6 +749,7 @@ class RE2 {
     bool perl_classes_;
     bool word_boundary_;
     bool one_line_;
+    bool minimize_max_mem_;
   };
 
   // Returns the options set in the constructor.
@@ -772,6 +781,7 @@ class RE2 {
   // First cache line is relatively cold fields.
   const std::string* pattern_;    // string regular expression
   Options options_;               // option flags
+  int64_t max_mem_;               // approx. max memory footprint of RE2
   re2::Regexp* entire_regexp_;    // parsed regular expression
   re2::Regexp* suffix_regexp_;    // parsed regular expression, prefix_ removed
   const std::string* error_;      // error indicator (or points to empty string)
