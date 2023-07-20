@@ -179,6 +179,9 @@ TESTS=\
 	obj/test/simplify_test\
 	obj/test/string_generator_test\
 
+CMDLINES=\
+    obj/cmdline/re2_maxmem_cmdline\
+
 BIGTESTS=\
 	obj/test/dfa_test\
 	obj/test/exhaustive1_test\
@@ -248,6 +251,10 @@ obj/test/regexp_benchmark: obj/libre2.a obj/re2/testing/regexp_benchmark.o $(TES
 	@mkdir -p obj/test
 	$(CXX) -o $@ obj/re2/testing/regexp_benchmark.o $(TESTOFILES) -lgtest -lbenchmark -lbenchmark_main obj/libre2.a $(RE2_LDFLAGS) $(LDFLAGS)
 
+obj/cmdline/re2_maxmem_cmdline: obj/libre2.a obj/re2/cmdline/re2_maxmem_cmdline.o
+	@mkdir -p obj/cmdline
+	$(CXX) -o $@ obj/re2/cmdline/re2_maxmem_cmdline.o obj/libre2.a $(RE2_LDFLAGS) $(LDFLAGS)
+
 # re2_fuzzer is a target for fuzzers like libFuzzer and AFL. This fake fuzzing
 # is simply a way to check that the target builds and then to run it against a
 # fixed set of inputs. To perform real fuzzing, refer to the documentation for
@@ -281,6 +288,9 @@ testofiles: $(TESTOFILES)
 
 .PHONY: test
 test: $(DTESTS) $(TESTS) $(STESTS) debug-test static-test shared-test
+
+.PHONY: cmdlines
+cmdlines: $(CMDLINES)
 
 .PHONY: debug-test
 debug-test: $(DTESTS)
