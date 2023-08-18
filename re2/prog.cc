@@ -925,6 +925,20 @@ void Prog::ComputeHints(std::vector<Inst>* flat, int begin, int end) {
   }
 }
 
+int64_t Prog::MinimumMemBudgetForCreation() {
+  return sizeof(Prog) + unoptimized_size_ * sizeof(Prog::Inst);
+}
+
+int64_t Prog::NFAInstructionMemAllocation() {
+  return sizeof(Prog) +
+         (inst_.size() * sizeof(Prog::Inst)) /* inst_ */ +
+         (list_heads_.size() * sizeof(uint16_t)) /* list_heads_*/;
+}
+
+int64_t Prog::NFAOnepassMemAllocation() {
+  return (onepass_nodes_.size() * sizeof(uint8_t)) /* onepass_nodes_ */;
+}
+
 // The final state will always be this, which frees up a register for the hot
 // loop and thus avoids the spilling that can occur when building with Clang.
 static const size_t kShiftDFAFinal = 9;

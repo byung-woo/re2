@@ -1168,7 +1168,7 @@ Prog* Compiler::Finish(Regexp* re) {
 
   // Hand off the array to Prog.
   prog_->inst_ = std::move(inst_);
-  prog_->size_ = ninst_;
+  prog_->size_ = prog_->unoptimized_size_ = ninst_;
 
   prog_->Optimize();
   prog_->Flatten();

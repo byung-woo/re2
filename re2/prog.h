@@ -397,6 +397,10 @@ class Prog {
   // Computes hints for ByteRange instructions in [begin, end).
   void ComputeHints(std::vector<Inst>* flat, int begin, int end);
 
+  int64_t MinimumMemBudgetForCreation();
+  int64_t NFAInstructionMemAllocation();
+  int64_t NFAOnepassMemAllocation();
+
   // Controls whether the DFA should bail out early if the NFA would be faster.
   // FOR TESTING ONLY.
   static void TESTING_ONLY_set_dfa_should_bail_when_slow(bool b);
@@ -416,6 +420,7 @@ class Prog {
   int start_;               // entry point for program
   int start_unanchored_;    // unanchored entry point for program
   int size_;                // number of instructions
+  int unoptimized_size_;    // number of instructions before optimizing
   int bytemap_range_;       // bytemap_[x] < bytemap_range_
 
   bool prefix_foldcase_;    // whether prefix is case-insensitive

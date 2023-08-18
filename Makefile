@@ -187,6 +187,9 @@ BIGTESTS=\
 	obj/test/exhaustive_test\
 	obj/test/random_test\
 
+CMDLINES=\
+	obj/cmdline/re2_memprof\
+
 SOFILES=$(patsubst obj/%,obj/so/%,$(OFILES))
 # We use TESTOFILES for testing the shared lib, only it is built differently.
 STESTS=$(patsubst obj/%,obj/so/%,$(TESTS))
@@ -248,6 +251,10 @@ obj/test/regexp_benchmark: obj/libre2.a obj/re2/testing/regexp_benchmark.o $(TES
 	@mkdir -p obj/test
 	$(CXX) -o $@ obj/re2/testing/regexp_benchmark.o $(TESTOFILES) -lgtest -lbenchmark -lbenchmark_main obj/libre2.a $(RE2_LDFLAGS) $(LDFLAGS)
 
+obj/cmdline/re2_memprof: obj/libre2.a obj/re2/cmdline/re2_memprof.o
+	@mkdir -p obj/cmdline
+	$(CXX) -o $@ obj/re2/cmdline/re2_memprof.o obj/libre2.a $(RE2_LDFLAGS) $(LDFLAGS)
+
 # re2_fuzzer is a target for fuzzers like libFuzzer and AFL. This fake fuzzing
 # is simply a way to check that the target builds and then to run it against a
 # fixed set of inputs. To perform real fuzzing, refer to the documentation for
@@ -305,6 +312,9 @@ static-bigtest: $(TESTS) $(BIGTESTS)
 .PHONY: shared-bigtest
 shared-bigtest: $(STESTS) $(SBIGTESTS)
 	@./runtests -shared-library-path obj/so $(STESTS) $(SBIGTESTS)
+
+.PHONY: cmdlines
+cmdlines: $(CMDLINES)
 
 .PHONY: benchmark
 benchmark: obj/test/regexp_benchmark

@@ -1052,6 +1052,38 @@ bool RE2::Rewrite(std::string* out,
   return true;
 }
 
+int64_t RE2::MinimumMemBudgetForCreation() {
+  return prog_->MinimumMemBudgetForCreation()*3/2;
+}
+
+int64_t RE2::ForwardNFAInstructionMemAllocation() {
+  return prog_->NFAInstructionMemAllocation();
+}
+
+int64_t RE2::ForwardNFAOnepassMemAllocation() {
+  return prog_->NFAOnepassMemAllocation();
+}
+
+int64_t RE2::ForwardDFAMemBudget() {
+  return prog_->dfa_mem();
+}
+
+void RE2::ForceCreateReverseProg() {
+  ReverseProg();
+}
+
+int64_t RE2::ReverseNFAInstructionMemAllocation() {
+  return rprog_ ? rprog_->NFAInstructionMemAllocation() : 0;
+}
+
+int64_t RE2::ReverseNFAOnepassMemAllocation() {
+  return rprog_ ? rprog_->NFAOnepassMemAllocation() : 0;
+}
+
+int64_t RE2::ReverseDFAMemBudget() {
+  return rprog_ ? rprog_->dfa_mem() : 0;
+}
+
 /***** Parsers for various types *****/
 
 namespace re2_internal {

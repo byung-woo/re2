@@ -603,6 +603,15 @@ class RE2 {
                const absl::string_view* vec,
                int veclen) const;
 
+  int64_t MinimumMemBudgetForCreation();
+  int64_t ForwardNFAInstructionMemAllocation();
+  int64_t ForwardNFAOnepassMemAllocation();
+  int64_t ForwardDFAMemBudget();
+  void ForceCreateReverseProg();
+  int64_t ReverseNFAInstructionMemAllocation();
+  int64_t ReverseNFAOnepassMemAllocation();
+  int64_t ReverseDFAMemBudget();
+
   // Constructor options
   class Options {
    public:
