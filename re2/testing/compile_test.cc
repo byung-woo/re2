@@ -157,6 +157,38 @@ TEST(TestRegexpCompileToProg, Simple) {
   EXPECT_EQ(failed, 0);
 }
 
+TEST(TestRegexpCompileToProg, MinimizeMemBudget) {
+  int failed = 0;
+  for (size_t i = 0; i < ABSL_ARRAYSIZE(tests); i++) {
+    const re2::Test& t = tests[i];
+    Regexp* re = Regexp::Parse(t.regexp, Regexp::PerlX|Regexp::Latin1, NULL);
+    if (re == NULL) {
+      LOG(ERROR) << "Cannot parse: " << t.regexp;
+      failed++;
+      continue;
+    }
+    Prog* prog = re->CompileToProg(0, true /* minimize_mem_budget */);
+    if (prog == NULL) {
+      LOG(ERROR) << "Cannot compile: " << t.regexp;
+      re->Decref();
+      failed++;
+      continue;
+    }
+    std::string s = prog->Dump();
+    EXPECT_EQ(s, t.code) << "regexp: " << t.regexp;
+    if (s != t.code) {
+      failed++;
+    }
+    EXPECT_EQ(prog->dfa_mem(), 0) << "regexp: " << t.regexp;
+    if (prog->dfa_mem() != 0) {
+      failed++;
+    }
+    delete prog;
+    re->Decref();
+  }
+  EXPECT_EQ(failed, 0);
+}
+
 static void DumpByteMap(absl::string_view pattern, Regexp::ParseFlags flags,
                         std::string* bytemap) {
   Regexp* re = Regexp::Parse(pattern, flags, NULL);

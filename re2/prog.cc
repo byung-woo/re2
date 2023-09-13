@@ -113,6 +113,7 @@ Prog::Prog()
     start_(0),
     start_unanchored_(0),
     size_(0),
+    unoptimized_size_(0),
     bytemap_range_(0),
     prefix_foldcase_(false),
     prefix_size_(0),

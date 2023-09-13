@@ -419,7 +419,7 @@ class Regexp {
   // Construction and execution of prog will
   // stay within approximately max_mem bytes of memory.
   // If max_mem <= 0, a reasonable default is used.
-  Prog* CompileToProg(int64_t max_mem);
+  Prog* CompileToProg(int64_t max_mem, bool minimize_mem_budget = false);
   Prog* CompileToReverseProg(int64_t max_mem);
 
   // Whether to expect this library to find exactly the same answer as PCRE
