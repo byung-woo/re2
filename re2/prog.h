@@ -202,6 +202,7 @@ class Prog {
   int start_unanchored() { return start_unanchored_; }
   void set_start_unanchored(int start) { start_unanchored_ = start; }
   int size() { return size_; }
+  int initial_size() { return initial_size_; }
   bool reversed() { return reversed_; }
   void set_reversed(bool reversed) { reversed_ = reversed; }
   int list_count() { return list_count_; }
@@ -415,7 +416,8 @@ class Prog {
 
   int start_;               // entry point for program
   int start_unanchored_;    // unanchored entry point for program
-  int size_;                // number of instructions
+  int size_;                // number of instructions (after optimization)
+  int initial_size_;        // number of initially compiled instructions
   int bytemap_range_;       // bytemap_[x] < bytemap_range_
 
   bool prefix_foldcase_;    // whether prefix is case-insensitive
