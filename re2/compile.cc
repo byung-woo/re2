@@ -102,7 +102,8 @@ class Compiler : public Regexp::Walker<Frag> {
   // Caller is responsible for deleting Prog when finished with it.
   // If reversed is true, compiles for walking over the input
   // string backward (reverses all concatenations).
-  static Prog *Compile(Regexp* re, bool reversed, int64_t max_mem);
+  static Prog *Compile(Regexp* re, bool reversed, int64_t max_mem,
+                       bool minimize_mem_budget);
 
   // Compiles alternation of all the re to a new Prog.
   // Each re has a match with an id equal to its index in the vector.
@@ -211,6 +212,7 @@ class Compiler : public Regexp::Walker<Frag> {
   int max_ninst_;      // Maximum number of instructions.
 
   int64_t max_mem_;    // Total memory budget.
+  bool minimize_mem_budget_; // Should minimize mem budget after compilation?
 
   absl::flat_hash_map<uint64_t, int> rune_cache_;
   Frag rune_range_;
@@ -229,6 +231,7 @@ Compiler::Compiler() {
   ninst_ = 0;
   max_ninst_ = 1;  // make AllocInst for fail instruction okay
   max_mem_ = 0;
+  minimize_mem_budget_ = false;
   int fail = AllocInst(1);
   inst_[fail].InitFail();
   max_ninst_ = 0;  // Caller must change
@@ -1109,10 +1112,12 @@ void Compiler::Setup(Regexp::ParseFlags flags, int64_t max_mem,
 // If reversed is true, compiles a program that expects
 // to run over the input string backward (reverses all concatenations).
 // The reversed flag is also recorded in the returned program.
-Prog* Compiler::Compile(Regexp* re, bool reversed, int64_t max_mem) {
+Prog* Compiler::Compile(Regexp* re, bool reversed, int64_t max_mem,
+                        bool minimize_mem_budget) {
   Compiler c;
   c.Setup(re->parse_flags(), max_mem, RE2::UNANCHORED /* unused */);
   c.reversed_ = reversed;
+  c.minimize_mem_budget_ = minimize_mem_budget;
 
   // Simplify to remove things like counted repetitions
   // and character classes like \d.
@@ -1168,7 +1173,7 @@ Prog* Compiler::Finish(Regexp* re) {
 
   // Hand off the array to Prog.
   prog_->inst_ = std::move(inst_);
-  prog_->size_ = ninst_;
+  prog_->size_ = prog_->initial_size_ = ninst_;
 
   prog_->Optimize();
   prog_->Flatten();
@@ -1182,7 +1187,9 @@ Prog* Compiler::Finish(Regexp* re) {
   }
 
   // Record remaining memory for DFA.
-  if (max_mem_ <= 0) {
+  if (minimize_mem_budget_) {
+    prog_->set_dfa_mem(0);
+  } else if (max_mem_ <= 0) {
     prog_->set_dfa_mem(1<<20);
   } else {
     int64_t m = max_mem_ - sizeof(Prog);
@@ -1200,12 +1207,12 @@ Prog* Compiler::Finish(Regexp* re) {
 }
 
 // Converts Regexp to Prog.
-Prog* Regexp::CompileToProg(int64_t max_mem) {
-  return Compiler::Compile(this, false, max_mem);
+Prog* Regexp::CompileToProg(int64_t max_mem, bool minimize_mem_budget) {
+  return Compiler::Compile(this, false, max_mem, minimize_mem_budget);
 }
 
 Prog* Regexp::CompileToReverseProg(int64_t max_mem) {
-  return Compiler::Compile(this, true, max_mem);
+  return Compiler::Compile(this, true, max_mem, false /* minimize_mem_budget */);
 }
 
 Frag Compiler::DotStar() {

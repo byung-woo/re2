@@ -205,6 +205,7 @@ void RE2::Init(absl::string_view pattern, const Options& options) {
 
   pattern_ = new std::string(pattern);
   options_.Copy(options);
+  mem_budget_ = options_.max_mem();
   entire_regexp_ = NULL;
   suffix_regexp_ = NULL;
   error_ = empty_string();
@@ -251,13 +252,17 @@ void RE2::Init(absl::string_view pattern, const Options& options) {
   // Two thirds of the memory goes to the forward Prog,
   // one third to the reverse prog, because the forward
   // Prog has two DFAs but the reverse prog has one.
-  prog_ = suffix_regexp_->CompileToProg(options_.max_mem()*2/3);
+  prog_ = suffix_regexp_->CompileToProg(mem_budget_*2/3,
+                                        options_.minimize_mem_budget());
   if (prog_ == NULL) {
     if (options_.log_errors())
       LOG(ERROR) << "Error compiling '" << trunc(*pattern_) << "'";
     error_ = new std::string("pattern too large - compile failed");
     error_code_ = RE2::ErrorPatternTooLarge;
     return;
+  }
+  if (options_.minimize_mem_budget()) {
+    mem_budget_ = (sizeof(Prog) + prog_->initial_size() * sizeof(Prog::Inst))*3/2;
   }
 
   // We used to compute this lazily, but it's used during the
@@ -277,7 +282,7 @@ void RE2::Init(absl::string_view pattern, const Options& options) {
 re2::Prog* RE2::ReverseProg() const {
   absl::call_once(rprog_once_, [](const RE2* re) {
     re->rprog_ =
-        re->suffix_regexp_->CompileToReverseProg(re->options_.max_mem() / 3);
+        re->suffix_regexp_->CompileToReverseProg(re->mem_budget_ / 3);
     if (re->rprog_ == NULL) {
       if (re->options_.log_errors())
         LOG(ERROR) << "Error reverse compiling '" << trunc(*re->pattern_)
@@ -1050,6 +1055,10 @@ bool RE2::Rewrite(std::string* out,
     }
   }
   return true;
+}
+
+int64_t RE2::MemBudget() const {
+  return mem_budget_;
 }
 
 /***** Parsers for various types *****/
